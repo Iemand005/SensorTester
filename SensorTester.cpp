@@ -112,7 +112,7 @@ int main()
 
                     SetConsoleCursorPosition(hConsoleOutput, dwWriteCoord);
 
-                    wcout << "  Sensor " << ulIndex << ": " << pFriendlyName << " (ID: " << lpSensorIDStr << " Type: " << lpSensorTypeStr << " Category: " << lpSensorCategoryStr << ")" << endl;
+                    wcout << "Sensor " << ulIndex << ": " << pFriendlyName << endl << " ID: " << lpSensorIDStr << endl << " Type: " << lpSensorTypeStr << endl << " Category: " << lpSensorCategoryStr << endl;
 
                     ISensorDataReport* pDataReport = NULL;
                     if (SUCCEEDED(pSensor->GetData(&pDataReport))) {
