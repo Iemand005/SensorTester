@@ -17,125 +17,123 @@
 using namespace std;
 using namespace _com_util;
 
-ISensorDataReport* pReport = NULL;
-ISensor* pAccelerometer = NULL;
 
 int main()
 {
-    std::cout << "Sensors:" << endl;
+    HRESULT hr = S_OK;
 
     ISensorManager* pSensorManager = NULL;
     ISensorCollection* pSensorCollection = NULL;
-    ISensor* pSensor = NULL;
-
-    HRESULT hr = S_OK;
 
     hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
     if (SUCCEEDED(hr))
-    {
-        hr = CoCreateInstance(CLSID_SensorManager, NULL, CLSCTX_INPROC_SERVER,
-            IID_PPV_ARGS(&pSensorManager));
-    }
+        hr = CoCreateInstance(CLSID_SensorManager, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pSensorManager));
 
     if (SUCCEEDED(hr))
-    {
         hr = pSensorManager->GetSensorsByCategory(SENSOR_CATEGORY_ALL, &pSensorCollection);
-    }
 
     if (SUCCEEDED(hr))
     {
         ULONG count = 0;
-        pSensorCollection->GetCount(&count);
+        hr = pSensorCollection->GetCount(&count);
 
-
-        if (count > 0)
+        if (count == 0)
         {
-            int number = -1;
+            cout << "No sensors found." << endl;
+            pSensorCollection->Release();
+            pSensorManager->Release();
+            CoUninitialize();
+			return 0;
+        }
 
-            while (number < 0 || number >= count) {
-                cout << "Found " << count << " sensors" << endl;
-                
-                for (int i = 0; i < count; i++) {
-                    if (SUCCEEDED(pSensorCollection->GetAt(i, &pSensor))) {
-                        BSTR name;
-                        pSensor->GetFriendlyName(&name);
-                        cout << "  " << i << ": " << ConvertBSTRToString(name) << endl;
-                        SysFreeString(name);
-                    }
-				}
+        int ulIndex = -1;
 
-                cout << "Choose one: ";
-                cin >> number;
-            }
+        ISensor* pSensor = NULL;
+        while (ulIndex < 0 || ulIndex >= count) {
+            cout << "Found " << count << " sensors" << endl;
 
-            HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
-            COORD coord = { 0, 0 };
-            DWORD count;
-            CONSOLE_SCREEN_BUFFER_INFO csbi;
-
-            if (!GetConsoleScreenBufferInfo(hStdOut, &csbi)) return -1;
-
-            DWORD cellCount = csbi.dwSize.X * csbi.dwSize.Y;
-            FillConsoleOutputCharacter(hStdOut, ' ', cellCount, coord, &count);
-            
-            while (true) {
-
-                FillConsoleOutputAttribute(hStdOut, csbi.wAttributes, cellCount, coord, &count);
-
-                SetConsoleCursorPosition(hStdOut, coord);
-                
-                if (SUCCEEDED(pSensorCollection->GetAt(number, &pSensor))) {
-                    BSTR name;
-                    SENSOR_CATEGORY_ID categoryId;
-                    SENSOR_TYPE_ID typeId;
-                    
-                    pSensor->GetFriendlyName(&name);
-                    pSensor->GetCategory(&categoryId);
-                    pSensor->GetType(&typeId);
-
-                    cout << "  Sensor " << number << ": " << ConvertBSTRToString(name) << endl;
-
-                    ISensorDataReport* pReport = NULL;
-                    if (SUCCEEDED(pSensor->GetData(&pReport))) {
-
-                        IPortableDeviceKeyCollection* pDataFields = NULL;
-                        if (SUCCEEDED(pSensor->GetSupportedDataFields(&pDataFields))) {
-                            DWORD numFields = 0;
-                            pDataFields->GetCount(&numFields);
-
-                            cout << hex << uppercase << setfill('0');
-
-                            for (DWORD j = 0; j < numFields; j++) {
-                                PROPERTYKEY key;
-                                if (SUCCEEDED(pDataFields->GetAt(j, &key))) {
-                                    PROPVARIANT var;
-                                    PropVariantInit(&var);
-
-                                    if (SUCCEEDED(pReport->GetSensorValue(key, &var))) {
-
-                                        const BYTE* pBytes = reinterpret_cast<const BYTE*>(&var) + sizeof(VARTYPE);
-                                        size_t size = sizeof(PROPVARIANT) - sizeof(VARTYPE);
-                                        
-                                        cout << "    ";
-
-                                        for (size_t i = 0; i < size; ++i) {
-                                            cout << setw(2) << static_cast<int>(pBytes[i]);
-                                            if (i < size - 1) cout << " ";
-                                        }
-
-                                        cout << endl;
-                                    }
-                                    PropVariantClear(&var);
-                                }
-                            }
-                            pDataFields->Release();
-                        }
-                        pReport->Release();
-                    }
+            for (int i = 0; i < count; i++) {
+                if (SUCCEEDED(pSensorCollection->GetAt(i, &pSensor))) {
+                    BSTR pSensorName;
+                    hr = pSensor->GetFriendlyName(&pSensorName);
+                    cout << "  " << i << ": " << ConvertBSTRToString(pSensorName) << endl;
+                    SysFreeString(pSensorName);
                 }
             }
+
+            cout << "Choose one: ";
+            cin >> ulIndex;
         }
+
+        HANDLE hConsoleOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+        CONSOLE_SCREEN_BUFFER_INFO lpConsoleScreenBufferInfo;
+        COORD dwWriteCoord = { 0, 0 };
+		DWORD lpNumberOfItemsWritten = 0;
+
+        if (!GetConsoleScreenBufferInfo(hConsoleOutput, &lpConsoleScreenBufferInfo)) return -1;
+
+        DWORD nLength = lpConsoleScreenBufferInfo.dwSize.X * lpConsoleScreenBufferInfo.dwSize.Y;
+        FillConsoleOutputCharacterW(hConsoleOutput, L' ', nLength, dwWriteCoord, &lpNumberOfItemsWritten);
+        FillConsoleOutputAttribute(hConsoleOutput, lpConsoleScreenBufferInfo.wAttributes, nLength, dwWriteCoord, &lpNumberOfItemsWritten);
+
+        if (SUCCEEDED(pSensorCollection->GetAt(ulIndex, &pSensor))) {
+            BSTR pFriendlyName;
+            SENSOR_CATEGORY_ID pSensorCategory;
+            SENSOR_TYPE_ID pSensorType;
+
+            hr = pSensor->GetFriendlyName(&pFriendlyName);
+            hr = pSensor->GetCategory(&pSensorCategory);
+            hr = pSensor->GetType(&pSensorType);
+
+            IPortableDeviceKeyCollection* pDataFields = NULL;
+            if (SUCCEEDED(pSensor->GetSupportedDataFields(&pDataFields))) {
+
+                DWORD numFields = 0;
+                hr = pDataFields->GetCount(&numFields);
+
+                while (true) {
+
+                    SetConsoleCursorPosition(hConsoleOutput, dwWriteCoord);
+
+                    cout << "  Sensor " << ulIndex << ": " << ConvertBSTRToString(pFriendlyName) << endl;
+
+                    ISensorDataReport* pDataReport = NULL;
+                    if (SUCCEEDED(pSensor->GetData(&pDataReport))) {
+
+                        cout << hex << uppercase << setfill('0');
+
+                        for (DWORD j = 0; j < numFields; j++) {
+                            PROPERTYKEY pKey;
+                            if (SUCCEEDED(pDataFields->GetAt(j, &pKey))) {
+
+                                PROPVARIANT pValue;
+                                PropVariantInit(&pValue);
+
+                                if (SUCCEEDED(pDataReport->GetSensorValue(pKey, &pValue))) {
+
+                                    const BYTE* pBytes = reinterpret_cast<const BYTE*>(&pValue) + sizeof(VARTYPE);
+                                    constexpr size_t size = sizeof(PROPVARIANT) - sizeof(VARTYPE);
+
+                                    cout << "    ";
+
+                                    for (size_t i = 0; i < size; ++i)
+                                        cout << setw(2) << static_cast<int>(pBytes[i]) << " ";
+
+                                    cout << endl;
+                                }
+                                hr = PropVariantClear(&pValue);
+                            }
+                        }
+                    }
+                    pDataReport->Release();
+                }
+            }
+            pDataFields->Release();
+        }
+		pSensor->Release();
     }
+    pSensorCollection->Release();
+    pSensorManager->Release();
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
