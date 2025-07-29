@@ -7,10 +7,11 @@
 
 #include <Windows.h>
 #include <comutil.h>
+#include <objbase.h>
 #include <sensorsapi.h>
 #include <sensors.h>
 #pragma comment(lib, "comsuppw.lib")
-#pragma comment(lib, "rpcrt4.lib")  
+#pragma comment(lib, "ole32.lib")
 #pragma comment(lib, "sensorsapi.lib")
 
 using namespace std;
@@ -92,13 +93,7 @@ int main()
                     pSensor->GetCategory(&categoryId);
                     pSensor->GetType(&typeId);
 
-					RPC_WSTR categoryIdStr;
-                    RPC_WSTR typeIdStr;
-					RPC_STATUS status = UuidToString(&categoryId, &categoryIdStr);
-                    status = UuidToString(&categoryId, &typeIdStr);
-
-                    cout << "  Sensor " << number << ": " << ConvertBSTRToString(name) << "(Category ID: " << categoryIdStr << ", Type ID: " << typeIdStr << ")" << endl;
-
+                    cout << "  Sensor " << number << ": " << ConvertBSTRToString(name) << endl;
 
                     ISensorDataReport* pReport = NULL;
                     if (SUCCEEDED(pSensor->GetData(&pReport))) {
