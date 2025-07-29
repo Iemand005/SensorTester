@@ -10,6 +10,7 @@
 #include <sensorsapi.h>
 #include <sensors.h>
 #pragma comment(lib, "comsuppw.lib")
+#pragma comment(lib, "rpcrt4.lib")  
 #pragma comment(lib, "sensorsapi.lib")
 
 using namespace std;
@@ -84,29 +85,20 @@ int main()
                 
                 if (SUCCEEDED(pSensorCollection->GetAt(number, &pSensor))) {
                     BSTR name;
-                    pSensor->GetFriendlyName(&name);
-
-                    cout << "  Sensor " << number << ": " << ConvertBSTRToString(name) << endl;
-
                     SENSOR_CATEGORY_ID categoryId;
                     SENSOR_TYPE_ID typeId;
-
+                    
+                    pSensor->GetFriendlyName(&name);
                     pSensor->GetCategory(&categoryId);
                     pSensor->GetType(&typeId);
 
-                    IPortableDeviceKeyCollection* pDataFields = NULL;
-                    if (SUCCEEDED(pSensor->GetSupportedDataFields(&pDataFields))) {
-                        DWORD numFields = 0;
-                        pDataFields->GetCount(&numFields);
+					RPC_WSTR categoryIdStr;
+                    RPC_WSTR typeIdStr;
+					RPC_STATUS status = UuidToString(&categoryId, &categoryIdStr);
+                    status = UuidToString(&categoryId, &typeIdStr);
 
-                        for (DWORD j = 0; j < numFields; j++) {
-                            PROPERTYKEY key;
-                            if (SUCCEEDED(pDataFields->GetAt(j, &key))) {
-                                //cout << to_wstring(key.pid).c_str() << endl;
-                            }
-                        }
-                        pDataFields->Release();
-                    }
+                    cout << "  Sensor " << number << ": " << ConvertBSTRToString(name) << "(Category ID: " << categoryIdStr << ", Type ID: " << typeIdStr << ")" << endl;
+
 
                     ISensorDataReport* pReport = NULL;
                     if (SUCCEEDED(pSensor->GetData(&pReport))) {
