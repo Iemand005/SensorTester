@@ -34,6 +34,8 @@ int main()
 
     if (SUCCEEDED(hr))
     {
+        ShowCursor(FALSE);
+
         ULONG count = 0;
         hr = pSensorCollection->GetCount(&count);
 
@@ -69,6 +71,11 @@ int main()
         CONSOLE_SCREEN_BUFFER_INFO lpConsoleScreenBufferInfo;
         COORD dwWriteCoord = { 0, 0 };
 		DWORD lpNumberOfItemsWritten = 0;
+
+        CONSOLE_CURSOR_INFO curInfo;
+        GetConsoleCursorInfo(hConsoleOutput, &curInfo);
+        curInfo.bVisible = FALSE;
+        SetConsoleCursorInfo(hConsoleOutput, &curInfo);
 
         if (!GetConsoleScreenBufferInfo(hConsoleOutput, &lpConsoleScreenBufferInfo)) return -1;
 
