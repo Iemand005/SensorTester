@@ -58,6 +58,7 @@ int main()
                 if (SUCCEEDED(pSensorCollection->GetAt(i, &pSensor))) {
                     BSTR pSensorName;
                     hr = pSensor->GetFriendlyName(&pSensorName);
+
                     cout << "  " << i << ": " << ConvertBSTRToString(pSensorName) << endl;
                     SysFreeString(pSensorName);
                 }
@@ -85,12 +86,21 @@ int main()
 
         if (SUCCEEDED(pSensorCollection->GetAt(ulIndex, &pSensor))) {
             BSTR pFriendlyName;
-            SENSOR_CATEGORY_ID pSensorCategory;
+            SENSOR_ID pSensorID;
             SENSOR_TYPE_ID pSensorType;
+            SENSOR_CATEGORY_ID pSensorCategory;
 
-            hr = pSensor->GetFriendlyName(&pFriendlyName);
-            hr = pSensor->GetCategory(&pSensorCategory);
+            hr = pSensor->GetID(&pSensorID);
             hr = pSensor->GetType(&pSensorType);
+            hr = pSensor->GetCategory(&pSensorCategory);
+            hr = pSensor->GetFriendlyName(&pFriendlyName);
+
+            LPOLESTR lpSensorIDStr = nullptr;
+            LPOLESTR lpSensorTypeStr = nullptr;
+            LPOLESTR lpSensorCategoryStr = nullptr;
+            hr = StringFromCLSID(pSensorID, &lpSensorIDStr);
+            hr = StringFromCLSID(pSensorType, &lpSensorTypeStr);
+            hr = StringFromCLSID(pSensorCategory, &lpSensorCategoryStr);
 
             IPortableDeviceKeyCollection* pDataFields = NULL;
             if (SUCCEEDED(pSensor->GetSupportedDataFields(&pDataFields))) {
@@ -102,7 +112,7 @@ int main()
 
                     SetConsoleCursorPosition(hConsoleOutput, dwWriteCoord);
 
-                    cout << "  Sensor " << ulIndex << ": " << ConvertBSTRToString(pFriendlyName) << endl;
+                    wcout << "  Sensor " << ulIndex << ": " << pFriendlyName << " (ID: " << lpSensorIDStr << " Type: " << lpSensorTypeStr << " Category: " << lpSensorCategoryStr << ")" << endl;
 
                     ISensorDataReport* pDataReport = NULL;
                     if (SUCCEEDED(pSensor->GetData(&pDataReport))) {
