@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <string>
+#include <iomanip>
 
 #include <Windows.h>
 #include <comutil.h>
@@ -50,7 +51,7 @@ int main()
             int number = -1;
 
             while (number < 0 || number >= count) {
-                cout << "Found " << count << "sensors" << endl;
+                cout << "Found " << count << " sensors" << endl;
                 
                 for (int i = 0; i < count; i++) {
                     if (SUCCEEDED(pSensorCollection->GetAt(i, &pSensor))) {
@@ -109,12 +110,13 @@ int main()
 
                     ISensorDataReport* pReport = NULL;
                     if (SUCCEEDED(pSensor->GetData(&pReport))) {
-                        OutputDebugString(L"   Current Values:\n");
 
                         IPortableDeviceKeyCollection* pDataFields = NULL;
                         if (SUCCEEDED(pSensor->GetSupportedDataFields(&pDataFields))) {
                             DWORD numFields = 0;
                             pDataFields->GetCount(&numFields);
+
+                            cout << hex << uppercase << setfill('0');
 
                             for (DWORD j = 0; j < numFields; j++) {
                                 PROPERTYKEY key;
@@ -123,14 +125,18 @@ int main()
                                     PropVariantInit(&var);
 
                                     if (SUCCEEDED(pReport->GetSensorValue(key, &var))) {
-                                        std::wstring valueStr;
-                                        switch (var.vt) {
-                                        case VT_R4: valueStr = std::to_wstring(var.fltVal); break;
-                                        case VT_UI4: valueStr = std::to_wstring(var.ulVal); break;
-                                        case VT_BOOL: valueStr = var.boolVal ? L"true" : L"false"; break;
-                                        default: valueStr = L"[unsupported type]"; break;
+
+                                        const BYTE* pBytes = reinterpret_cast<const BYTE*>(&var) + sizeof(VARTYPE);
+                                        size_t size = sizeof(PROPVARIANT) - sizeof(VARTYPE);
+                                        
+                                        cout << "    ";
+
+                                        for (size_t i = 0; i < size; ++i) {
+                                            cout << setw(2) << static_cast<int>(pBytes[i]);
+                                            if (i < size - 1) cout << " ";
                                         }
-                                        cout << "    Value: " << valueStr.c_str() << endl;
+
+                                        cout << endl;
                                     }
                                     PropVariantClear(&var);
                                 }
