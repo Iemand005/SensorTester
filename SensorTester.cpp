@@ -26,7 +26,7 @@ int main()
     ISensor* pSensor = NULL;
 
     HRESULT hr = S_OK;
-    // Initialize the sensor manager
+
     hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
     if (SUCCEEDED(hr))
     {
@@ -34,16 +34,11 @@ int main()
             IID_PPV_ARGS(&pSensorManager));
     }
 
-    // Get accelerometer sensors
     if (SUCCEEDED(hr))
     {
         hr = pSensorManager->GetSensorsByCategory(SENSOR_CATEGORY_ALL, &pSensorCollection);
-        //hr = pSensorManager->GetSensorsByCategory(SENSOR_CATEGORY_MOTION, &pSensorCollection);
-        //hr = pSensorManager->GetSensorsByType(SENSOR_TYPE_ACCELEROMETER_3D, &pSensorCollection);
-        //hr = pSensorManager->GetSensorsByType(/*SENSOR_CATEENGORY_MOTION*/, &pSensorCollection);
     }
 
-    // Get the first accelerometer
     if (SUCCEEDED(hr))
     {
         ULONG count = 0;
@@ -70,22 +65,22 @@ int main()
                 cin >> number;
             }
 
+            HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+            COORD coord = { 0, 0 };
+            DWORD count;
+            CONSOLE_SCREEN_BUFFER_INFO csbi;
+
+            if (!GetConsoleScreenBufferInfo(hStdOut, &csbi)) return -1;
+
+            DWORD cellCount = csbi.dwSize.X * csbi.dwSize.Y;
+            FillConsoleOutputCharacter(hStdOut, ' ', cellCount, coord, &count);
+            
             while (true) {
-                HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
-                COORD coord = { 0, 0 };
-                DWORD count;
-                CONSOLE_SCREEN_BUFFER_INFO csbi;
 
-                if (GetConsoleScreenBufferInfo(hStdOut, &csbi)) {
-                    DWORD cellCount = csbi.dwSize.X * csbi.dwSize.Y;
+                FillConsoleOutputAttribute(hStdOut, csbi.wAttributes, cellCount, coord, &count);
 
-                    FillConsoleOutputCharacter(hStdOut, ' ', cellCount, coord, &count);
-
-                    FillConsoleOutputAttribute(hStdOut, csbi.wAttributes, cellCount, coord, &count);
-
-                    SetConsoleCursorPosition(hStdOut, coord);
-                }
-
+                SetConsoleCursorPosition(hStdOut, coord);
+                
                 if (SUCCEEDED(pSensorCollection->GetAt(number, &pSensor))) {
                     BSTR name;
                     pSensor->GetFriendlyName(&name);
